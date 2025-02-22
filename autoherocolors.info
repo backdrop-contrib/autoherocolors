@@ -1,5 +1,5 @@
 name = Automatic Hero Colors
-description = TODO
+description = Automatically sets the text color for hero blocks based on average background image color.
 backdrop = 1.x
 type = module
 dependencies[] = image
