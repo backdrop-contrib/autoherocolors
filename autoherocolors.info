@@ -2,5 +2,4 @@ name = Automatic Hero Colors
 description = TODO
 backdrop = 1.x
 type = module
-dependencies[] = block
 dependencies[] = image
