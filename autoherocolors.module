@@ -1,0 +1,122 @@
+<?php
+/**
+ * @file
+ * Hook implementations and callbacks for the Automatic Hero Colors module.
+ */
+
+/**
+ * Implements hook_layout_presave().
+ */
+function autoherocolors_layout_presave(Layout $layout) {
+  foreach ($layout->content as $uuid => $block) {
+    if (is_a($block, 'BlockHero')) {
+      if (!empty($block->settings['image_path'])) {
+        $avg_color = _autoherocolors_extract_image_color($block->settings['image_path']);
+        if ($avg_color) {
+          $style = _autoherocolors_create_style($avg_color, $uuid);
+          $layout->content[$uuid]->settings['inline_style'] = $style;
+        }
+      }
+      else {
+        unset($layout->content[$uuid]->settings['inline_style']);
+      }
+    }
+  }
+}
+
+/**
+ * Implements template_preprocess_block().
+ */
+function autoherocolors_preprocess_block(array &$variables) {
+  $block = $variables['block'];
+
+  if (is_a($block, 'BlockHero') && isset($block->settings['inline_style'])) {
+    $variables['classes'][] = 'block-' . $block->uuid;
+    backdrop_add_css($block->settings['inline_style'], array('type' => 'inline'));
+  }
+}
+
+/**
+ * Callback to extract the average color of an image using GD.
+ *
+ * @param string $path
+ *   Local path to image.
+ *
+ * @return array<string, int>|false
+ *   Array keyed by color names, false in case of failure.
+ */
+function _autoherocolors_extract_image_color($path) {
+  $rgb = FALSE;
+  $file_contents = file_get_contents(BACKDROP_ROOT . $path);
+  if ($file_contents) {
+    $image = imagecreatefromstring($file_contents);
+
+    if (!empty($image)) {
+      $width = imagesx($image);
+      $height = imagesy($image);
+      $tmp = imagecreatetruecolor(1, 1);
+      imagecopyresampled($tmp, $image, 0, 0, 0, 0, 1, 1, $width, $height);
+      $pixelcolor = imagecolorat($tmp, 0, 0);
+      if ($pixelcolor !== FALSE) {
+        $rgb = imagecolorsforindex($tmp, $pixelcolor);
+        unset($rgb['alpha']);
+      }
+    }
+  }
+
+  return $rgb;
+}
+
+/**
+ * Custom callback to create CSS string.
+ *
+ * @param array<string, int> $color
+ *   Array keyed by color name, extraced by imagecolorat().
+ * @param string $uuid
+ *   The block UUID.
+ *
+ * @return string|null
+ *   CSS styles or null in case of unlikely error.
+ */
+function _autoherocolors_create_style(array $color, $uuid) {
+  $class = "block-$uuid";
+  $bg_color = "rgb({$color['red']}, {$color['green']}, {$color['blue']})";
+  $average = array_sum($color) / count($color);
+  $fg_colors = array(
+    'lighter' => '#fff',
+    'light' => '#eee',
+    'dark' => '#444',
+    'darker' => '#000',
+  );
+
+  if ($average > 190) {
+    $fg_color = $fg_colors['dark'];
+  }
+  elseif ($average > 127) {
+    $fg_color = $fg_colors['darker'];
+  }
+  elseif ($average < 64) {
+    $fg_color = $fg_colors['light'];
+  }
+  else {
+    $fg_color = $fg_colors['lighter'];
+  }
+
+  // Set inline css but try to not be too greedy with links, to avoid mangling
+  // button styles. As this sets the link color to text color, highlight links
+  // using text shadow.
+  $style = "
+  .$class {
+    background-color: $bg_color;
+  }
+  .$class .block-title,
+  .$class .block-content,
+  .$class .block-content a:not([class]) {
+    color: $fg_color;
+  }
+  .$class .block-content a:not([class]) {
+    text-shadow: 1px 0 0 $fg_color;
+  }";
+
+  return preg_replace('/\s+/', ' ', $style);
+}
