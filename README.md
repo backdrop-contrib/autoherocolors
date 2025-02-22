@@ -25,6 +25,13 @@ dark images, and the text on top might be hard to recognize.
 Install this module using the official 
   [Backdrop CMS instructions](https://docs.backdropcms.org/documentation/extend-with-modules)
 
+## Dependencies
+
+No hard requirement, but this module is only useful, if the Image module
+(core) is enabled.
+
+Color calculation is done using GD.
+
 ## Issues
 
 Bugs and Feature requests should be reported in the 
