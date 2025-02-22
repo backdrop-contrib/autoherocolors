@@ -16,7 +16,7 @@ then you change the image, and you have to update that CSS again.
 Or you have multiple hero blocks, either in the same layout or different
 ones, and some background images are light, others are dark...
 
-**Another problem:** If a background image loads rather slow (on slow
+**Another problem:** If a background image loads rather slowly (on slow
 connections), there's this flash before the image is loaded, especially with
 dark images, and the text on top might be hard to recognize.
 
